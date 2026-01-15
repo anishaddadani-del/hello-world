@@ -1,0 +1,68 @@
+name: Keep the Streak Alive (Random Shades Mode)
+
+on:
+  schedule:
+    - cron: '30 8 * * *'    # ~morning
+    - cron: '15 12 * * *'   # ~lunch
+    - cron: '45 14 * * *'   # ~afternoon
+    - cron: '0 17 * * *'    # ~after work
+    - cron: '30 20 * * 1-5' # ~evening (Mon–Fri)
+    - cron: '15 22 * * 0,6' # ~late night (weekends)
+  workflow_dispatch:
+
+jobs:
+  daily-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Random commits for varied shades
+        run: |
+          # Get today's date for filename
+          TODAY=$(date '+%Y-%m-%d')
+          FILE="notes/$TODAY.md"
+          
+          # Random content array (customize for more variety)
+          CONTENTS=(
+            "Quick note: Remember to refactor that function later."
+            "Idea: Build a simple CLI tool for task tracking."
+            "Quote of the day: 'Code is like humor. When you have to explain it, it’s bad.' - Cory House"
+            "TODO: Learn more about async/await patterns."
+            "Random thought: Why do programmers prefer dark mode? Because light attracts bugs! 😂"
+            "Experiment: Trying out a new sorting algorithm."
+            "Update: Fixed a minor bug in the script."
+            "Learning: Diving into GitHub Actions docs."
+            "WIP: Sketching out a new project idea."
+            "Brainstorm: Adding features to my side project."
+            "Fix: Squashed a pesky error."
+          )
+          
+          # Random number of commits this run: 0–3 (bias toward 1–2)
+          NUM_COMMITS=$((RANDOM % 4))  # 0,1,2,3 equally likely
+          if [ $NUM_COMMITS -eq 0 ] && [ $((RANDOM % 5)) -ne 0 ]; then NUM_COMMITS=1; fi  # Reduce full skips to ~20%
+          
+          mkdir -p notes
+          
+          for (( i=1; i<=$NUM_COMMITS; i++ )); do
+            # Pick random entry
+            ENTRY="${CONTENTS[$RANDOM % ${#CONTENTS[@]} ]}"
+            
+            # Append to file
+            echo "### $(date '+%H:%M') - $ENTRY" >> "$FILE"
+            
+            # Set git config
+            git config user.name "anishaddadani-del"
+            git config user.email "255032174+anishaddadani-del@users.noreply.github.com"
+            
+            git add "$FILE"
+            git commit -m "Random note #$i for $TODAY ($(date '+%H:%M'))"
+            
+            sleep $((1 + RANDOM % 5))  # 1–5 sec delay for varied timestamps
+          done
+          
+          if [ $NUM_COMMITS -gt 0 ]; then
+            git push
+          fi
